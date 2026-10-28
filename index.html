@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4G1单元一打写练习</title>
+    <!-- 使用外部 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #ecfdf5; /* 单元一打写练习主题，使用代表成长和学习的翠绿色调 */
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .typing-container {
+            background: white;
+            padding: 2.5rem 2rem 2rem 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            width: 95%;
+            max-width: 800px;
+            text-align: center;
+            position: relative;
+            margin: 1rem;
+        }
+
+        .target-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .target-text {
+            font-size: clamp(1.8rem, 7vw, 3.2rem);
+            letter-spacing: 0.2rem;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            line-height: 1.4;
+            /* 阻止用户选中和复制文本 */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .char {
+            transition: all 0.2s ease;
+            display: inline-block;
+            border-bottom: 3px solid transparent;
+        }
+
+        .char.default { color: #4b5563; }
+        .char.correct { color: #10b981; font-weight: bold; } /* 翠绿色表示正确 */
+        .char.wrong { 
+            color: #ef4444; 
+            animation: shake 0.3s;
+        }
+
+        .input-line {
+            width: 100%;
+            border: none;
+            border-bottom: 4px solid #cbd5e1;
+            font-size: clamp(1.5rem, 5vw, 2.2rem);
+            text-align: center;
+            padding: 0.8rem;
+            outline: none;
+            background: transparent;
+            transition: border-color 0.3s;
+        }
+
+        .input-line:focus {
+            border-color: #10b981; /* 聚焦时变为翠绿色 */
+        }
+
+        .audio-btn {
+            background: #ecfdf5;
+            color: #059669;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .audio-btn:hover {
+            background: #d1fae5;
+            transform: scale(1.1);
+        }
+
+        .hint-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .star-rating {
+            font-size: 2.5rem;
+            color: #fbbf24;
+            margin: 1rem 0;
+            letter-spacing: 0.3rem;
+        }
+
+        .hidden { display: none !important; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        .celebration-bg {
+            background: linear-gradient(135deg, #34d399 0%, #047857 100%);
+        }
+
+        @media (max-width: 640px) {
+            .typing-container { padding: 1.5rem; }
+            .hint-btn { top: 0.5rem; right: 0.5rem; }
+            .audio-btn { width: 40px; height: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="typing-container" id="game-container">
+    <button id="hint-trigger" class="hint-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        查看提示
+    </button>
+
+    <h1 class="text-xl sm:text-2xl font-bold text-emerald-700 mt-6 mb-4">4G1单元一打写练习</h1>
+    <div id="game-content">
+        <!-- 主题颜色更改为 emerald-600 -->
+        <div id="level-indicator" class="text-emerald-600 font-bold tracking-widest text-sm sm:text-base mb-1">4G1单元一打写练习</div>
+        <div id="progress" class="text-gray-400 text-xs mb-4">进度: 1 / 9</div>
+
+        <div class="target-area">
+            <div id="target-display" class="target-text"></div>
+            <button id="speak-btn" class="audio-btn" title="朗读内容">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </button>
+        </div>
+
+        <div class="input-wrapper">
+            <input type="text" id="type-input" class="input-line" placeholder="请在这里输入中文..." autocomplete="off">
+        </div>
+    </div>
+
+    <div id="result-screen" class="hidden animate-in fade-in zoom-in duration-500 text-center">
+        <h2 class="text-2xl font-bold mb-2 text-gray-800">本关表现</h2>
+        <div id="stars" class="star-rating"></div>
+        <div class="text-gray-600 mb-6">
+            <p>准确率: <span id="accuracy-val" class="font-bold text-emerald-600 text-xl">0%</span></p>
+            <p>所用时间: <span id="time-val" class="font-bold text-emerald-600 text-xl">0秒</span></p>
+        </div>
+        <div class="flex flex-col sm:flex-row justify-center gap-3">
+            <button onclick="restartLevel()" class="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition">再试一次</button>
+            <button id="next-btn" onclick="goToNextLevel()" class="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold transition">继续挑战</button>
+        </div>
+    </div>
+
+    <div id="final-celebration" class="hidden fixed inset-0 celebration-bg flex flex-col items-center justify-center z-[100] text-white p-6 animate-in fade-in duration-700">
+        <div class="text-8xl mb-6 animate-bounce">🎓</div>
+        <h1 class="text-4xl sm:text-5xl font-bold mb-4">学霸诞生！</h1>
+        <p class="text-xl sm:text-2xl text-emerald-50 mb-8 max-w-md">你已经顺利完成了4G1单元一的打写任务！🌟</p>
+        <div class="bg-white/20 backdrop-blur-md rounded-3xl p-8 mb-8 text-center border border-white/30 shadow-2xl">
+            <p class="text-lg opacity-90">发掘潜能，点燃前途 👏</p>
+            <p class="text-sm mt-2 opacity-75">华文练习，更上一层楼</p>
+        </div>
+        <button onclick="location.reload()" class="px-10 py-4 bg-white text-emerald-600 rounded-full font-black text-xl hover:bg-emerald-50 transition transform hover:scale-105 shadow-xl">
+            重新练习一次
+        </button>
+    </div>
+</div>
+
+<div id="hint-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span class="text-emerald-500">💡</span> 学习提示
+        </h3>
+        <div class="space-y-4">
+            <div>
+                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">拼音 Pinyin</p>
+                <p id="hint-pinyin" class="text-lg text-emerald-600 font-bold"></p>
+            </div>
+            <div>
+                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">英文 English</p>
+                <p id="hint-english" class="text-gray-700"></p>
+            </div>
+            <div>
+                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">解释 Meaning</p>
+                <p id="hint-chinese" class="text-gray-700 text-sm leading-relaxed"></p>
+            </div>
+        </div>
+        <button id="close-hint" class="w-full mt-6 py-3 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition shadow-lg shadow-emerald-200">知道了</button>
+    </div>
+</div>
+
+<audio id="error-sound" preload="auto">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    const levels = [
+    {
+        "title": "第一关：词语练习",
+        "items": [
+            {
+                "text": "擅长",
+                "pinyin": "shàn cháng",
+                "en": "Be good at; Excel at",
+                "zh": "在某方面有特长，做得很好。"
+            },
+            {
+                "text": "骄傲",
+                "pinyin": "jiāo ào",
+                "en": "Proud; Arrogant",
+                "zh": "① 因自己或他人的成就而感到自豪。② 自以为了不起，看不起别人。"
+            },
+            {
+                "text": "记录",
+                "pinyin": "jì lù",
+                "en": "Record",
+                "zh": "把事情写下来或保存下来，供以后查看。"
+            },
+            {
+                "text": "前途",
+                "pinyin": "qián tú",
+                "en": "Future; Prospects",
+                "zh": "将来的发展情况或前景。"
+            },
+            {
+                "text": "茫然",
+                "pinyin": "máng rán",
+                "en": "At a loss; Bewildered",
+                "zh": "完全不知道该怎么办或不明白发生了什么事。"
+            },
+            {
+                "text": "怀疑",
+                "pinyin": "huái yí",
+                "en": "Doubt; Suspect",
+                "zh": "对某件事情或某个人不太相信，心中有疑问。"
+            },
+            {
+                "text": "栽培",
+                "pinyin": "zāi péi",
+                "en": "Cultivate; Nurture",
+                "zh": "① 种植并培育植物。② 培养、帮助人才成长。"
+            },
+            {
+                "text": "发掘",
+                "pinyin": "fā jué",
+                "en": "Discover; Unearth",
+                "zh": "发现或挖掘原本没有被注意到的事物或人才。"
+            },
+            {
+                "text": "燃",
+                "pinyin": "rán",
+                "en": "Burn; Ignite",
+                "zh": "燃烧；使物体着火。"
+            }
+        ]
+    },
+    {
+        "title": "第二关：句子练习",
+        "items": [
+            {
+                "text": "他擅长打篮球，是学校篮球队的主力球员。",
+                "pinyin": "Tā shàn cháng dǎ lán qiú, shì xué xiào lán qiú duì de zhǔ lì qiú yuán.",
+                "en": "He is good at basketball and is a key player on the school basketball team.",
+                "zh": "应用词语：擅长。在某方面有特长，做得很好。"
+            },
+            {
+                "text": "我为哥哥取得的好成绩感到骄傲。",
+                "pinyin": "Wǒ wèi gē ge qǔ dé de hǎo chéng jì gǎn dào jiāo ào.",
+                "en": "I am proud of my older brother for his good results.",
+                "zh": "应用词语：骄傲。① 因自己或他人的成就而感到自豪。② 自以为了不起，看不起别人。"
+            },
+            {
+                "text": "她用相机记录了校园生活中的美好瞬间。",
+                "pinyin": "Tā yòng xiàng jī jì lù le xiào yuán shēng huó zhōng de měi hǎo shùn jiān.",
+                "en": "She captured beautiful moments of school life with her camera.",
+                "zh": "应用词语：记录。把事情写下来或保存下来，供以后查看。"
+            },
+            {
+                "text": "只要努力学习，就有机会拥有光明的前途。",
+                "pinyin": "Zhǐ yào nǔ lì xué xí, jiù yǒu jī huì yōng yǒu guāng míng de qián tú.",
+                "en": "As long as you study hard, you have a chance to enjoy a bright future.",
+                "zh": "应用词语：前途。将来的发展情况或前景。"
+            },
+            {
+                "text": "面对突如其来的问题，他感到十分茫然。",
+                "pinyin": "Miàn duì tū rú qí lái de wèn tí, tā gǎn dào shí fēn máng rán.",
+                "en": "Faced with an unexpected problem, he felt completely at a loss.",
+                "zh": "应用词语：茫然。完全不知道该怎么办或不明白发生了什么事。"
+            },
+            {
+                "text": "他怀疑自己听错了，再次向老师确认。",
+                "pinyin": "Tā huái yí zì jǐ tīng cuò le, zài cì xiàng lǎo shī què rèn.",
+                "en": "He suspected that he had misheard and checked with the teacher again.",
+                "zh": "应用词语：怀疑。对某件事情或某个人不太相信，心中有疑问。"
+            },
+            {
+                "text": "在教练的悉心栽培下，他终于成为一名优秀的篮球运动员。",
+                "pinyin": "Zài jiào liàn de xī xīn zāi péi xià, tā zhōng yú chéng wéi yì míng yōu xiù de lán qiú yùn dòng yuán.",
+                "en": "With careful nurturing from his coach, he finally became an excellent basketball player.",
+                "zh": "应用词语：栽培。① 种植并培育植物。② 培养、帮助人才成长。"
+            },
+            {
+                "text": "老师通过各种活动发掘学生的潜能。",
+                "pinyin": "Lǎo shī tōng guò gè zhǒng huó dòng fā jué xué shēng de qián néng.",
+                "en": "The teacher discovers students’ potential through various activities.",
+                "zh": "应用词语：发掘。发现或挖掘原本没有被注意到的事物或人才。"
+            },
+            {
+                "text": "熊熊燃起的火焰照亮了漆黑的夜空。",
+                "pinyin": "Xióng xióng rán qǐ de huǒ yàn zhào liàng le qī hēi de yè kōng.",
+                "en": "The blazing flames lit up the pitch-black night sky.",
+                "zh": "应用词语：燃。燃烧；使物体着火。"
+            }
+        ]
+    }
+];
+
+    let currentLevelIdx = 0;
+    let currentItemIdx = 0;
+    let startTime = null;
+    let totalErrors = 0;
+    let totalChars = 0;
+    let isFinished = false;
+    let isComposing = false;
+    let isTransitioning = false;
+
+    const targetDisplay = document.getElementById('target-display');
+    const typeInput = document.getElementById('type-input');
+    const levelIndicator = document.getElementById('level-indicator');
+    const progressIndicator = document.getElementById('progress');
+    const resultScreen = document.getElementById('result-screen');
+    const finalCelebration = document.getElementById('final-celebration');
+    const gameContent = document.getElementById('game-content');
+    const errorSound = document.getElementById('error-sound');
+    const hintTrigger = document.getElementById('hint-trigger');
+    const hintModal = document.getElementById('hint-modal');
+    const closeHint = document.getElementById('close-hint');
+    const speakBtn = document.getElementById('speak-btn');
+
+    function initLevel() {
+        currentItemIdx = 0;
+        totalErrors = 0;
+        totalChars = 0;
+        isFinished = false;
+        isTransitioning = false;
+        typeInput.disabled = false;
+        startTime = null;
+        levelIndicator.innerText = levels[currentLevelIdx].title;
+        resultScreen.classList.add('hidden');
+        finalCelebration.classList.add('hidden');
+        gameContent.classList.remove('hidden');
+        hintTrigger.classList.remove('hidden');
+        typeInput.value = '';
+        typeInput.focus();
+        loadItem();
+    }
+
+    function loadItem() {
+        isTransitioning = false;
+        typeInput.disabled = false;
+        const item = levels[currentLevelIdx].items[currentItemIdx];
+        targetDisplay.innerHTML = '';
+        progressIndicator.innerText = `进度: ${currentItemIdx + 1} / ${levels[currentLevelIdx].items.length}`;
+        [...item.text].forEach(char => {
+            const span = document.createElement('span');
+            span.innerText = char;
+            span.className = 'char default';
+            targetDisplay.appendChild(span);
+        });
+        typeInput.value = '';
+        typeInput.focus();
+    }
+
+    speakBtn.onclick = () => {
+        if (isTransitioning) return;
+        const textToSpeak = levels[currentLevelIdx].items[currentItemIdx].text;
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.lang = 'zh-CN';
+        utterance.rate = 0.8;
+        speechSynthesis.speak(utterance);
+    };
+
+    hintTrigger.onclick = () => {
+        if (isTransitioning) return;
+        const item = levels[currentLevelIdx].items[currentItemIdx];
+        document.getElementById('hint-pinyin').innerText = item.pinyin;
+        document.getElementById('hint-english').innerText = item.en;
+        document.getElementById('hint-chinese').innerText = item.zh;
+        hintModal.classList.remove('hidden');
+    };
+
+    closeHint.onclick = () => {
+        hintModal.classList.add('hidden');
+        typeInput.focus();
+    };
+
+    typeInput.addEventListener('compositionstart', () => { isComposing = true; });
+    typeInput.addEventListener('compositionend', () => { isComposing = false; handleInput(); });
+    typeInput.addEventListener('input', () => { if (!isComposing) handleInput(); });
+
+    // 防作弊：禁止在输入框中使用粘贴、复制或剪切功能
+    typeInput.addEventListener('paste', e => e.preventDefault());
+    typeInput.addEventListener('copy', e => e.preventDefault());
+    typeInput.addEventListener('cut', e => e.preventDefault());
+
+    function handleInput() {
+        if (isFinished || isTransitioning) return;
+        if (!startTime) startTime = new Date();
+        const typedValue = typeInput.value;
+        const targetText = levels[currentLevelIdx].items[currentItemIdx].text;
+        const spans = targetDisplay.querySelectorAll('.char');
+        
+        for (let i = 0; i < targetText.length; i++) {
+            if (i < typedValue.length) {
+                if (typedValue[i] === targetText[i]) {
+                    spans[i].className = 'char correct';
+                } else {
+                    if (spans[i].className !== 'char wrong') {
+                        errorSound.currentTime = 0;
+                        errorSound.play().catch(e => {});
+                        totalErrors++;
+                    }
+                    spans[i].className = 'char wrong';
+                }
+            } else {
+                spans[i].className = 'char default';
+            }
+        }
+        
+        if (typedValue === targetText) {
+            isTransitioning = true;
+            typeInput.disabled = true;
+            totalChars += targetText.length;
+            currentItemIdx++;
+            if (currentItemIdx < levels[currentLevelIdx].items.length) {
+                setTimeout(loadItem, 300);
+            } else {
+                showResults();
+            }
+        }
+    }
+
+    function showResults() {
+        isFinished = true;
+        const duration = Math.floor((new Date() - startTime) / 1000);
+        const accuracy = Math.max(0, Math.round((totalChars / (totalChars + totalErrors)) * 100));
+        document.getElementById('accuracy-val').innerText = accuracy + '%';
+        document.getElementById('time-val').innerText = duration + '秒';
+        let stars = accuracy >= 98 ? 5 : accuracy >= 90 ? 4 : accuracy >= 75 ? 3 : accuracy >= 60 ? 2 : 1;
+        document.getElementById('stars').innerText = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+        gameContent.classList.add('hidden');
+        hintTrigger.classList.add('hidden');
+        resultScreen.classList.remove('hidden');
+        const nextBtn = document.getElementById('next-btn');
+        if (currentLevelIdx >= levels.length - 1) {
+            nextBtn.innerText = "完成练习";
+            nextBtn.onclick = () => {
+                resultScreen.classList.add('hidden');
+                finalCelebration.classList.remove('hidden');
+            };
+        } else {
+            nextBtn.innerText = "进入句子挑战";
+            nextBtn.onclick = goToNextLevel;
+        }
+    }
+
+    function restartLevel() { initLevel(); }
+    function goToNextLevel() { if (currentLevelIdx < levels.length - 1) { currentLevelIdx++; initLevel(); } }
+    window.onload = initLevel;
+</script>
+
+</body>
+</html>
